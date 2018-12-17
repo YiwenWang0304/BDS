@@ -14,6 +14,7 @@ import org.diku.dms.bds_project.query.MatchesRDD;
 import org.diku.dms.bds_project.query.PatternGraph;
 
 import scala.Tuple2;
+import scala.Tuple3;
 
 /**
  * Graph consists of three RDDs: `VertexRDD`, `EdgeRDD` and `EdgeTripletRDD`.
@@ -150,31 +151,47 @@ public class Graph<VD, ED> implements Serializable {
 	 * @param patternGraph
 	 * @return a new `MatchesRDD`
 	 */
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes" })
 	public MatchesRDD match(PatternGraph patternGraph) {
-		//implemented
+		//implemented-subgraph matching optimization
 		EdgePattern[] edgePatterns=patternGraph.toEdgePatterns();	
 		
-		List<MatchesRDD> matchRDDList=new ArrayList<MatchesRDD>(null);
+		List<MatchesRDD> matchRDDList=new ArrayList<MatchesRDD>();
 		for(EdgePattern edgePattern:edgePatterns) {
 			matchRDDList.add(matchEdgePattern(edgePattern));
 		}
-			
-		//subgraph matching optimization
+
 		JavaRDD<MatchesRDD> mRDD=SharedJavaSparkContextLocal.jsc().parallelize(matchRDDList);
-		JavaPairRDD<MatchesRDD, Long> pairs = mRDD.mapToPair(s -> new Tuple2<MatchesRDD,Long>(s, 1L));
+		JavaPairRDD<MatchesRDD,Long> pairs = mRDD.mapToPair(s -> new Tuple2<MatchesRDD,Long>(s, 1L));
 		JavaPairRDD<MatchesRDD, Long> counts = pairs.reduceByKey((a, b) -> a + b);	
-		JavaPairRDD<Long, MatchMeta> swapped = counts.mapToPair(new PairFunction<Tuple2<MatchMeta, Long>, Long, MatchMeta>() {
+		JavaPairRDD<Long, MatchesRDD> swapped = counts.mapToPair(new PairFunction<Tuple2<MatchesRDD, Long>, Long, MatchesRDD>() {
 	           @Override
-	           public Tuple2<Long, MatchMeta> call(Tuple2<MatchMeta, Long> item) throws Exception {
+	           public Tuple2<Long, MatchesRDD> call(Tuple2<MatchesRDD, Long> item) throws Exception {
 	               return item.swap();
 	           }
 	      });
 		swapped.sortByKey();
-		List<Tuple2<Long, MatchMeta>> matchMetaCounts=swapped.collect();
+		List<Tuple2<Long, MatchesRDD>> countList=swapped.collect();
+		Iterator<Tuple2<Long, MatchesRDD>> countListItr=countList.iterator();
+
+		List<MatchesRDD> matches=new ArrayList<MatchesRDD>();
+		while(countListItr.hasNext())
+			matches.add(countListItr.next()._2);
 		
-		
-		
-		return null;	
+		while(matches.size()!=1) 
+			matches=JoinMatches(matches);
+	
+		return matches.get(0);	
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private List<MatchesRDD> JoinMatches(List<MatchesRDD> matches) {
+		List<MatchesRDD> newmatches=new ArrayList<MatchesRDD>();
+		for(int i=0;i<matches.size();i++) {
+			for(int j=i+1;j<matches.size();j++) {
+				newmatches.add(matches.get(i).join(matches.get(j)));
+			}
+		}
+		return newmatches;
 	}
 }

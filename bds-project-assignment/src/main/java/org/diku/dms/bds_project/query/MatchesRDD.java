@@ -31,11 +31,8 @@ public class MatchesRDD<VD, ED> extends JavaRDD<Match> {
 	public MatchesRDD(MatchMeta meta, JavaRDD<Match> matches) {
 		// implemented
 		super(matches.rdd(), scala.reflect.ClassTag$.MODULE$.apply(Match.class));
-		List<Match> listMatches = matches.collect();
-		Iterator<Match> it = listMatches.iterator();
 		this.meta = meta;
-		while (it.hasNext())
-			this.matches.add(it.next());
+		this.matches=matches.collect();
 	}
 
 	/**
@@ -44,33 +41,37 @@ public class MatchesRDD<VD, ED> extends JavaRDD<Match> {
 	 * of assignment description, the matches of edge pattern (u1, u2) and (u1, u3)
 	 * are as follows.
 	 * 
-	 * |u1 u2 | |u1 u3| ----- meta data ---| |------| |-----| ---| |v2 v3 | |v2 v4|
-	 * --| ---|-- MatchesRDD instance |v3 v4 | |v4 v5| --|-- collection of `Match`
-	 * ---| |v5 v3 | | | --| ---|
+	 * |u1 u2 | |u1 u3| ----- meta data ---| 
+	 * |------| |-----| ---| 
+	 * |v2 v3 | |v2 v4| --| ---|-- MatchesRDD instance 
+	 * |v3 v4 | |v4 v5| --|-- collection of `Match` ---| 
+	 * |v5 v3 | | | --| ---|
 	 * 
-	 * The result of join should be |u1 u2 u3| |--------| |v2 v3 v4| | |
+	 * The result of join should be 
+	 * |u1 u2 u3|
+	 * |--------| 
+	 * |v2 v3 v4| | |
 	 * 
 	 * @param other another `MatchesRDD` instance
 	 * @return a new `MatchesRDD` according to the join
 	 */
-	@SuppressWarnings("null")
+	@SuppressWarnings({ "null", "rawtypes", "unchecked" })
 	public MatchesRDD<ED, VD> join(MatchesRDD<ED, VD> other) {
 		// Implemented.
-		MatchesRDD<ED, VD> newmatchRDD = new MatchesRDD<ED, VD>(null, null);
 		int[] pos = this.meta.compareWith(other.meta);
+		MatchesRDD matchesRDD = null;
 		if (pos[0] != -1) {//at lease one same vertex in both MatchesRDD
 			// generate new matchRDD's meta
-			newmatchRDD.meta = this.meta;
-			Iterator<VertexId> it0 = newmatchRDD.meta.iterator();
+			MatchMeta meta = this.meta;
+			Iterator<VertexId> it0 = meta.iterator();
+			Iterator<VertexId> it1 = other.meta.iterator();
 			while (it0.hasNext()) {
-				VertexId thisVertexId = it0.next();
-				Iterator<VertexId> it1 = other.meta.iterator();
 				while (it1.hasNext()) {
 					VertexId otherVertexId = it1.next();
-					if (thisVertexId == otherVertexId)
+					if (it0.next() == otherVertexId)
 						break;
 					else
-						newmatchRDD.meta.vertexs.add(otherVertexId);
+						meta.vertexs.add(otherVertexId);
 				}
 			}
 
@@ -82,6 +83,7 @@ public class MatchesRDD<VD, ED> extends JavaRDD<Match> {
 					Match othermatch = itmatchother.next();
 					if (thismatch.vertexs.get(pos[0]).compareTo(othermatch.vertexs.get(pos[1])) == 0) {//compare matches to same meta vertex
 						// generate new matchRDD's matches
+						List<Match> matches=new ArrayList<Match>();
 						Match newmatch = thismatch;
 						Iterator<VertexId> it2 = thismatch.vertexs.iterator();
 						Iterator<VertexId> it3 = othermatch.vertexs.iterator();
@@ -95,12 +97,13 @@ public class MatchesRDD<VD, ED> extends JavaRDD<Match> {
 									newmatch.vertexs.add(otherVertexId);
 							}
 						}
-						newmatchRDD.matches.add(newmatch);
+						matches.add(newmatch);
 					}
 				}
 			}
+			matchesRDD=new MatchesRDD(meta,SharedJavaSparkContextLocal.jsc().parallelize(matches));
 		}
-		return newmatchRDD;
+		return matchesRDD;
 	}
 
 	// implemented
@@ -113,76 +116,4 @@ public class MatchesRDD<VD, ED> extends JavaRDD<Match> {
 		return graph.match(patterngraph);
 	}
 
-	/*
-	 * // implemented public JavaRDD<Tuple2<VertexId, VertexId>>
-	 * getAllEdgesByLabels(VD vertexLabel, ED edgeLabel, EdgeDirection
-	 * edgeDirection) { List<Tuple2<VertexId, VertexId>> alledgesbylabels = new
-	 * ArrayList<Tuple2<VertexId, VertexId>>();
-	 * 
-	 * List<Tuple2<PartitionId, EdgeTripletPartition<ED, VD>>> edgeTripletPartitions
-	 * = edgeTriplets.partitionsRDD .collect(); Iterator<Tuple2<PartitionId,
-	 * EdgeTripletPartition<ED, VD>>> edgetripletItr =
-	 * edgeTripletPartitions.iterator();
-	 * 
-	 * while (edgetripletItr.hasNext()) { EdgeTripletPartition<ED, VD>
-	 * edgetripletpartition = edgetripletItr.next()._2; List<Integer> edgepos = new
-	 * ArrayList<Integer>(); int i = 0; for (ED edgelabel :
-	 * edgetripletpartition.data) { if (edgelabel == edgeLabel) edgepos.add(i); i++;
-	 * }
-	 * 
-	 * Iterator<Integer> posItr = edgepos.iterator(); while (posItr.hasNext()) {
-	 * Integer pos = posItr.next(); VertexId src =
-	 * edgetripletpartition.local2global[edgetripletpartition.localSrcIds[pos]];
-	 * VertexId dst =
-	 * edgetripletpartition.local2global[edgetripletpartition.localDstIds[pos]]; if
-	 * (edgeDirection.equals(EdgeDirection.IN)) {// check source vertex if
-	 * (vertexLabel ==
-	 * edgetripletpartition.getVertexAttrs(edgetripletpartition.localSrcIds[pos]))
-	 * alledgesbylabels.add(new Tuple2<VertexId, VertexId>(src, dst)); } else if
-	 * (edgeDirection.equals(EdgeDirection.OUT)) {// check destination vertex if
-	 * (vertexLabel ==
-	 * edgetripletpartition.getVertexAttrs(edgetripletpartition.localDstIds[pos]))
-	 * alledgesbylabels.add(new Tuple2<VertexId, VertexId>(src, dst)); } else if
-	 * (edgeDirection.equals(EdgeDirection.BOTH)) {// check both vertices if
-	 * (vertexLabel ==
-	 * edgetripletpartition.getVertexAttrs(edgetripletpartition.localSrcIds[pos]) &&
-	 * vertexLabel == edgetripletpartition
-	 * .getVertexAttrs(edgetripletpartition.localDstIds[pos]))
-	 * alledgesbylabels.add(new Tuple2<VertexId, VertexId>(src, dst)); } } } return
-	 * SharedJavaSparkContextLocal.jsc().parallelize(alledgesbylabels);
-	 * 
-	 * }
-	 * 
-	 * // implemented public JavaRDD<Tuple2<VertexId, VertexId>>
-	 * getEdgesFromVertexByLabels(VertexId vertexId, ED edgeLabel, EdgeDirection
-	 * edgeDirection) { List<Tuple2<VertexId, VertexId>> edgesfromvertexbylabels =
-	 * new ArrayList<Tuple2<VertexId, VertexId>>();
-	 * 
-	 * List<Tuple2<PartitionId, EdgeTripletPartition<ED, VD>>> edgeTripletPartitions
-	 * = edgeTriplets.partitionsRDD .collect(); Iterator<Tuple2<PartitionId,
-	 * EdgeTripletPartition<ED, VD>>> edgetripletItr =
-	 * edgeTripletPartitions.iterator();
-	 * 
-	 * while (edgetripletItr.hasNext()) { EdgeTripletPartition<ED, VD>
-	 * edgetripletpartition = edgetripletItr.next()._2; List<Integer> edgepos = new
-	 * ArrayList<Integer>(); int i = 0; for (ED edgelabel :
-	 * edgetripletpartition.data) { if (edgelabel == edgeLabel) edgepos.add(i); i++;
-	 * }
-	 * 
-	 * Iterator<Integer> posItr = edgepos.iterator(); while (posItr.hasNext()) {
-	 * VertexId src =
-	 * edgetripletpartition.local2global[edgetripletpartition.localSrcIds[posItr.
-	 * next()]]; VertexId dst =
-	 * edgetripletpartition.local2global[edgetripletpartition.localDstIds[posItr.
-	 * next()]]; if (edgeDirection.equals(EdgeDirection.IN)) {// check source vertex
-	 * if (vertexId == src) edgesfromvertexbylabels.add(new Tuple2<VertexId,
-	 * VertexId>(src, dst)); } else if (edgeDirection.equals(EdgeDirection.OUT)) {//
-	 * check destination vertex if (vertexId == dst) edgesfromvertexbylabels.add(new
-	 * Tuple2<VertexId, VertexId>(src, dst)); } else {// check both vertices if
-	 * (vertexId == src && vertexId == dst) edgesfromvertexbylabels.add(new
-	 * Tuple2<VertexId, VertexId>(src, dst)); } } }
-	 * 
-	 * return
-	 * SharedJavaSparkContextLocal.jsc().parallelize(edgesfromvertexbylabels); }
-	 */
 }
