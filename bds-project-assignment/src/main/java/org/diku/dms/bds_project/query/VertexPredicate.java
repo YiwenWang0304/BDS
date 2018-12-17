@@ -4,7 +4,7 @@ package org.diku.dms.bds_project.query;
  * `type` refers to whether this query vertex should match a data vertex id or a vertex attribute.
  * `value` represents either a vertex id or a vertex attribute according to `type`.
  */
-public class VertexPredicate<V> {
+public class VertexPredicate {
 	public static enum Type {ATTR, ID};
 	public Type type; 
 	public Object value;

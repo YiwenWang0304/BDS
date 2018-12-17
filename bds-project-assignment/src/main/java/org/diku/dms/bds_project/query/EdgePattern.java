@@ -11,8 +11,7 @@ import java.io.Serializable;
  * @param <ED> edge attribute data type
  */
 @SuppressWarnings("serial")
-public class EdgePattern<VD, ED> implements Serializable{
-	@SuppressWarnings("rawtypes")
+public class EdgePattern<ED> implements Serializable{
 	public QueryVertex srcVertex, dstVertex;
 	public ED attr;
 	/**
@@ -21,7 +20,7 @@ public class EdgePattern<VD, ED> implements Serializable{
 	 * @param dstVertex destination vertex
 	 * @param attr edge attribute
 	 */
-	@SuppressWarnings("rawtypes")
+
 	public EdgePattern(QueryVertex srcVertex, QueryVertex dstVertex, ED attr) {
 		this.srcVertex = srcVertex;
 		this.dstVertex = dstVertex;

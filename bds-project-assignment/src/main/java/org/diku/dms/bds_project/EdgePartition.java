@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.*;
 
 import scala.Tuple2;
@@ -30,9 +29,6 @@ public class EdgePartition<ED> implements Serializable {
 	Map<VertexId, Integer> index = null, global2local = null;
 	VertexId[] local2global = null;
 	int size = 0;
-	
-	SparkConf conf = new SparkConf().setAppName("EdgePartition").setMaster("local[*]");
-	JavaSparkContext sc = new JavaSparkContext(conf);
 
 	/**
 	 * 
@@ -135,7 +131,7 @@ public class EdgePartition<ED> implements Serializable {
 				ids.add(i, local2global[idlist.get(i++)]);
 		}
 
-		JavaRDD<VertexId> distData = sc.parallelize(ids);
+		JavaRDD<VertexId> distData = SharedJavaSparkContextLocal.jsc().parallelize(ids);
 		JavaPairRDD<VertexId, Long> pairs = distData.mapToPair(s -> new Tuple2<VertexId,Long>(s, 1L));
 		JavaPairRDD<VertexId, Long> counts = pairs.reduceByKey((a, b) -> a + b);
 

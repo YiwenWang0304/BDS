@@ -2,14 +2,15 @@ package org.diku.dms.bds_project;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.Function2;
 import org.diku.dms.bds_project.query.EdgePattern;
+import org.diku.dms.bds_project.query.QueryVertex;
+import org.diku.dms.bds_project.query.VertexPredicate;
+import org.diku.dms.bds_project.query.VertexPredicate.Type;
 
 import scala.Tuple2;
 
@@ -47,8 +48,43 @@ public class EdgeTripletPartition<ED, VD> extends EdgePartition<ED> implements S
 	 */
 	@SuppressWarnings("rawtypes")
 	public Iterator<Tuple2<VertexId, VertexId>> matchEdgePattern(EdgePattern edgePattern) {
-		// Please implement this function which returns source vertex and destination vertex ids of edges that match the `edgePattern`.
-		return null;
+		//implemented
+		List<Tuple2<VertexId, VertexId>> matches=new ArrayList<Tuple2<VertexId, VertexId>>(null);
+		
+		QueryVertex srcVertex=edgePattern.srcVertex;
+		QueryVertex dstVertex=edgePattern.dstVertex;
+		VertexId srcid=srcVertex.id;
+		VertexId dstid=dstVertex.id;
+		VertexPredicate srcpredicate=srcVertex.predicate;
+		VertexPredicate dstpredicate=dstVertex.predicate;
+		
+		if(srcpredicate.type.equals(VertexPredicate.Type.ATTR)){//if src predicate attr
+			if(vertexAttrs[super.global2local.get(srcid)]==srcpredicate.value) {
+				if(dstpredicate.type.equals(VertexPredicate.Type.ATTR)){//if dst predicate attr
+					if(vertexAttrs[super.global2local.get(dstid)]==dstpredicate.value) 
+						matches.add(new Tuple2<VertexId, VertexId>(srcid,dstid));			
+				}else if(dstpredicate.type.equals(VertexPredicate.Type.ID)){//if dst predicate it
+					for(VertexId id:super.local2global) {
+						if(id==dstid) 
+							matches.add(new Tuple2<VertexId, VertexId>(srcid,dstid));			
+					}
+				}
+			}
+		}else if(srcpredicate.type.equals(VertexPredicate.Type.ID)){//if src predicate id
+			for(VertexId id:super.local2global) {
+				if(id==srcid) {
+					if(dstpredicate.type.equals(VertexPredicate.Type.ATTR)){//if dst predicate attr
+						if(vertexAttrs[super.global2local.get(dstid)]==dstpredicate.value) 
+							matches.add(new Tuple2<VertexId, VertexId>(srcid,dstid));			
+					}else if(dstpredicate.type.equals(VertexPredicate.Type.ID)){//if dst predicate id
+						for(VertexId id2:super.local2global) {
+							if(id2==dstid) matches.add(new Tuple2<VertexId, VertexId>(srcid,dstid));	
+						}
+					}
+				}
+			}
+		}
+		return matches.iterator();
 	}
 	
 	/**

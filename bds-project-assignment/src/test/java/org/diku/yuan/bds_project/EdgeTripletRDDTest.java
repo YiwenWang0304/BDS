@@ -1,6 +1,5 @@
 package org.diku.yuan.bds_project;
 
-import static org.junit.Assert.*;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -12,8 +11,8 @@ import org.apache.spark.api.java.JavaRDD;
 import org.diku.dms.bds_project.Edge;
 import org.diku.dms.bds_project.EdgeTriplet;
 import org.diku.dms.bds_project.EdgeTripletRDD;
+import org.diku.dms.bds_project.SharedJavaSparkContextLocal;
 import org.diku.dms.bds_project.VertexId;
-import org.junit.Before;
 import org.junit.Test;
 
 import scala.Tuple2;

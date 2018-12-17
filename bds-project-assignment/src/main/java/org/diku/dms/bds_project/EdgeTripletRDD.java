@@ -1,11 +1,14 @@
 package org.diku.dms.bds_project;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.spark.Partition;
 import org.apache.spark.TaskContext;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.rdd.RDD;
 import org.diku.dms.bds_project.query.EdgePattern;
@@ -41,10 +44,27 @@ public class EdgeTripletRDD<ED, VD> extends RDD<EdgeTriplet<ED, VD>> {
 	 * @param edgePattern the edge pattern that edge triplets contained in `EdgeTripletRDD` try to match
 	 * @return an JavaRDD consisting of a collection of matches
 	 */
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "null" })
 	public JavaRDD<Match> matchEdgePattern(EdgePattern edgePattern) {
-		//Please implement this function
-		return null;
+		//implemented
+		List<Tuple2<PartitionId, EdgeTripletPartition<ED,VD>>> edgetripletpartitions=partitionsRDD.collect();
+		Iterator<Tuple2<PartitionId, EdgeTripletPartition<ED,VD>>> edgetripletpartitionsItr=edgetripletpartitions.iterator();
+		
+		Iterator<Tuple2<VertexId, VertexId>> matchedRDDItr = null;
+		List<Match> matches=new ArrayList<Match>(null);
+		
+		while(edgetripletpartitionsItr.hasNext()) {
+			EdgeTripletPartition<ED,VD> edgetripletpartition=edgetripletpartitionsItr.next()._2;
+			matchedRDDItr= edgetripletpartition.matchEdgePattern(edgePattern);
+			while(matchedRDDItr.hasNext()) {
+				Match match = null;
+				match.vertexs.add(matchedRDDItr.next()._1);
+				match.vertexs.add(matchedRDDItr.next()._2);
+				matches.add(match);
+			}
+		}		
+
+		return SharedJavaSparkContextLocal.jsc().parallelize(matches);
 	}
 	
 	public static <ED,VD> EdgeTripletRDD<ED, VD> fromEdgeTripletPartitions(
@@ -70,7 +90,7 @@ public class EdgeTripletRDD<ED, VD> extends RDD<EdgeTriplet<ED, VD>> {
 		return this.firstParent(scala.reflect.ClassTag$.MODULE$.apply(Tuple2.class)).partitions();
 	}
 
-	//implementing
+	//implemented
 	public static <ED, VD > EdgeTripletRDD<ED, VD> fromEdgeTriplets(JavaRDD<EdgeTriplet <ED, VD >> edgetriplets) {
 		Function2<Integer, Iterator<EdgeTriplet<ED, VD>>, Iterator<Tuple2<PartitionId, EdgeTripletPartition<ED, VD>>>> f = new 
 				Function2<Integer, Iterator<EdgeTriplet<ED,VD>>, Iterator<Tuple2<PartitionId, EdgeTripletPartition<ED,VD>>>>() {

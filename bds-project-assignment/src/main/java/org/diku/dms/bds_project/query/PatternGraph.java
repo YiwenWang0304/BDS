@@ -13,11 +13,10 @@ import org.diku.dms.bds_project.VertexId;
  * @param <VD> vertex attribute data type
  * @param <ED> edge attribute data type
  */
+@SuppressWarnings("rawtypes")
 public class PatternGraph<VD, ED> {
-	@SuppressWarnings("rawtypes")
 	List<QueryVertex> vertices;
 	Map<VertexId, Integer> index;
-	@SuppressWarnings("rawtypes")
 	List<QueryEdge> edges;
 	/**
 	 * Constructor method.
@@ -25,7 +24,6 @@ public class PatternGraph<VD, ED> {
 	 * @param vertices a list of query vertices
 	 * @param edges a list of query edges
 	 */
-	@SuppressWarnings("rawtypes")
 	public PatternGraph(List<QueryVertex> vertices, List<QueryEdge> edges) {
 		this.vertices = vertices;
 		this.edges = edges;
@@ -39,10 +37,9 @@ public class PatternGraph<VD, ED> {
 	 * Attracts all edge patterns from a pattern graph.
 	 * @return an array of edge patterns
 	 */
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings("unchecked")
 	public EdgePattern[] toEdgePatterns() {
 		EdgePattern[] edgePatterns = new EdgePattern[edges.size()]; 
-		@SuppressWarnings("unchecked")
 		Object[] objs = edges.stream().map(edge->new EdgePattern(vertices.get(index.get(edge.srcId)), vertices.get(index.get(edge.dstId)), edge.attr)).toArray();
 		for (int i = 0; i < objs.length; ++i) {
 			edgePatterns[i] = (EdgePattern) objs[i];

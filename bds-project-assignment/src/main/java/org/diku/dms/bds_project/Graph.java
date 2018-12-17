@@ -5,18 +5,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.spark.HashPartitioner;
-import org.apache.spark.Partitioner;
-import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.FlatMapFunction2;
 import org.diku.dms.bds_project.query.EdgePattern;
 import org.diku.dms.bds_project.query.MatchesRDD;
 import org.diku.dms.bds_project.query.PatternGraph;
 
-import scala.Function2;
 import scala.Tuple2;
 
 /**
@@ -34,9 +28,6 @@ public class Graph<VD, ED> implements Serializable {
 	public VertexRDD<VD> vertices;
 	public EdgeRDD<ED> edges;
 	public EdgeTripletRDD<ED, VD> edgeTriplets;
-	
-	SparkConf conf = new SparkConf().setAppName("EdgePartition").setMaster("local[2]");
-	JavaSparkContext sc = new JavaSparkContext(conf);
 	
 	/**
 	 * 
@@ -104,7 +95,7 @@ public class Graph<VD, ED> implements Serializable {
 			}
 		}
 		
-		JavaRDD<Tuple2<PartitionId, EdgeTripletPartition<ED,VD>>> edgetripletPartitions=sc.parallelize(edgetriplets);
+		JavaRDD<Tuple2<PartitionId, EdgeTripletPartition<ED,VD>>> edgetripletPartitions=SharedJavaSparkContextLocal.jsc().parallelize(edgetriplets);
 		return EdgeTripletRDD.fromEdgeTripletPartitions(edgetripletPartitions);
 	}
 	
@@ -138,7 +129,7 @@ public class Graph<VD, ED> implements Serializable {
 	 * @param edgePattern the edge pattern that edge triplets contained in this graph try to match
 	 * @return a new `MatchesRDD`
 	 */
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public MatchesRDD matchEdgePattern(EdgePattern edgePattern) {
 		return new MatchesRDD(edgeTriplets.matchEdgePattern(edgePattern));
 	}
@@ -151,70 +142,8 @@ public class Graph<VD, ED> implements Serializable {
 	 */
 	@SuppressWarnings("rawtypes")
 	public MatchesRDD match(PatternGraph patternGraph) {
-		// Please implement this function.
-		return null;
-	}
-	
-	//implemented
-	public JavaRDD<Tuple2<VertexId, VertexId>> getAllEdgesByLabels(VD vertexLabel, ED edgeLabel, boolean edgeDirection){
-		List<Tuple2<VertexId, VertexId>> alledgesbylabels=new ArrayList<Tuple2<VertexId, VertexId>>();
-		
-		List<Tuple2<PartitionId, EdgeTripletPartition<ED,VD>>> edgeTripletPartitions=edgeTriplets.partitionsRDD.collect();
-		Iterator<Tuple2<PartitionId, EdgeTripletPartition<ED,VD>>> edgetripletItr=edgeTripletPartitions.iterator();
-		
-		while(edgetripletItr.hasNext()) {
-			EdgeTripletPartition<ED,VD> edgetripletpartition = edgetripletItr.next()._2;
-			List<Integer> edgepos = new ArrayList<Integer>();
-			int i = 0;
-			for (ED edgelabel : edgetripletpartition.data)
-				if (edgelabel == edgeLabel) edgepos.add(i++);
-			
-			Iterator<Integer> posItr = edgepos.iterator();
-			while (posItr.hasNext()) {
-				VertexId src = edgetripletpartition.local2global[edgetripletpartition.localSrcIds[posItr.next()]];
-				VertexId dst = edgetripletpartition.local2global[edgetripletpartition.localDstIds[posItr.next()]];
-				if (edgeDirection) {// check source vertex
-					if (vertexLabel == edgetripletItr.next()._2.getVertexAttrs(posItr.next()))
-						alledgesbylabels.add(new Tuple2<VertexId, VertexId>(src, dst));
-				} else {// check destination vertex
-					if (vertexLabel ==  edgetripletItr.next()._2.getVertexAttrs(posItr.next()))
-						alledgesbylabels.add(new Tuple2<VertexId, VertexId>(src, dst));
-				}
-			}
-		}
-		return sc.parallelize(alledgesbylabels); 
-		
-	}
-	
-	//implemented
-	public JavaRDD<Tuple2<VertexId,VertexId>> getEdgesFromVertexByLabels(VertexId vertexId, ED edgeLabel, boolean edgeDirection){
-		List<Tuple2<VertexId, VertexId>> alledgesbylabels=new ArrayList<Tuple2<VertexId, VertexId>>();
-		
-		List<Tuple2<PartitionId, EdgeTripletPartition<ED,VD>>> edgeTripletPartitions=edgeTriplets.partitionsRDD.collect();
-		Iterator<Tuple2<PartitionId, EdgeTripletPartition<ED,VD>>> edgetripletItr=edgeTripletPartitions.iterator();
-		
-		while(edgetripletItr.hasNext()) {
-			EdgeTripletPartition<ED,VD> edgetripletpartition = edgetripletItr.next()._2;
-			List<Integer> edgepos = new ArrayList<Integer>();
-			int i = 0;
-			for (ED edgelabel : edgetripletpartition.data)
-				if (edgelabel == edgeLabel)
-					edgepos.add(i++);
-			Iterator<Integer> posItr = edgepos.iterator();
-
-			while (posItr.hasNext()) {
-				VertexId src = edgetripletpartition.local2global[edgetripletpartition.localSrcIds[posItr.next()]];
-				VertexId dst = edgetripletpartition.local2global[edgetripletpartition.localDstIds[posItr.next()]];
-				if (edgeDirection) {// check source vertex
-					if (vertexId == src)
-						alledgesbylabels.add(new Tuple2<VertexId, VertexId>(src, dst));
-				} else {// check destination vertex
-					if (vertexId == dst)
-						alledgesbylabels.add(new Tuple2<VertexId, VertexId>(src, dst));
-				}
-			}
-		}
-		
-		return sc.parallelize(alledgesbylabels);
+		//implemented
+		EdgePattern[] edgepatterns=patternGraph.toEdgePatterns();	
+		return MatchesRDD.fromEdgePattern(edgepatterns);
 	}
 }

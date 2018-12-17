@@ -6,10 +6,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.spark.Partition;
-import org.apache.spark.SparkConf;
 import org.apache.spark.TaskContext;
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.rdd.RDD;
 
@@ -26,10 +24,6 @@ import scala.Tuple2;
 public class EdgeRDD<ED> extends RDD<Edge<ED>> {
 	public final JavaRDD<Tuple2<PartitionId, EdgePartition<ED>>> partitionsRDD;
 	
-	SparkConf conf = new SparkConf().setAppName("EdgePartition").setMaster("local[1]");
-	JavaSparkContext sc = new JavaSparkContext(conf);
-	
-
 	/**
 	 * In the constructor method, we need to call super class constructor function
 	 * first. `Edge.class` implies it exposes the interfaces to others as storing a
@@ -71,10 +65,10 @@ public class EdgeRDD<ED> extends RDD<Edge<ED>> {
 	 * @return the number of edges contained by `EdgeRDD`
 	 */
 	public long numEdges() {
-		return partitionsRDD.map(tuple -> tuple._2.numEdges()) // `tuple` is of type Tuple2<PartitionId, EdgePartition>,
-																// so it maps each tuple to the number of edges in its
-																// EdgePartition instance.
-				.reduce((a, b) -> a + b); // reduce() function sum up number of edges of all VertexPartition instances.
+		// `tuple` is of type Tuple2<PartitionId, EdgePartition>, so it maps each tuple to 
+		//the number of edges in its EdgePartition instance.
+		// reduce() function sum up number of edges of all VertexPartition instances.
+		return partitionsRDD.map(tuple -> tuple._2.numEdges()).reduce((a, b) -> a + b); 
 	}
 
 	/**
@@ -174,7 +168,7 @@ public class EdgeRDD<ED> extends RDD<Edge<ED>> {
 			while (it_ep.hasNext()) degrees_result.add(it_ep.next());
 		}
 		
-		return sc.parallelize(degrees_result);
+		return SharedJavaSparkContextLocal.jsc().parallelize(degrees_result);
 	}
 
 }

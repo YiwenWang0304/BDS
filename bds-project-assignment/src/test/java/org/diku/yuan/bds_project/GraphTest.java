@@ -9,6 +9,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.diku.dms.bds_project.Edge;
 import org.diku.dms.bds_project.Graph;
+import org.diku.dms.bds_project.SharedJavaSparkContextLocal;
 import org.diku.dms.bds_project.VertexId;
 import org.junit.Before;
 import org.junit.Test;

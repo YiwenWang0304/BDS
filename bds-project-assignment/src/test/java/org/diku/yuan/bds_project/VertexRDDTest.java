@@ -6,10 +6,9 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.diku.dms.bds_project.Edge;
 import org.diku.dms.bds_project.EdgeRDD;
+import org.diku.dms.bds_project.SharedJavaSparkContextLocal;
 import org.diku.dms.bds_project.VertexId;
 import org.diku.dms.bds_project.VertexRDD;
 import org.junit.Test;
@@ -34,12 +33,9 @@ public class VertexRDDTest extends SharedJavaSparkContextLocal implements Serial
 	}
 
 	@Test
-	public void testVertexRDD() {		
-		SparkConf sparkConf = new SparkConf().setAppName("dbs-project").setMaster("local").set("spark.driver.allowMultipleContexts", "true");
-		JavaSparkContext jsc = new JavaSparkContext(sparkConf);
-		EdgeRDD<Integer> edges = EdgeRDD.fromEdges(jsc.parallelize(sampleEdges(), 2));
-		VertexRDD<Integer> vertices = VertexRDD
-				.fromVerticesAndEdgeRDD(jsc.parallelize(sampleVertices(), 2).mapToPair(tuple -> tuple), edges);
+	public void testVertexRDD() {
+		EdgeRDD<Integer> edges = EdgeRDD.fromEdges(jsc().parallelize(sampleEdges(), 2));
+		VertexRDD<Integer> vertices = VertexRDD.fromVerticesAndEdgeRDD(jsc().parallelize(sampleVertices(), 2).mapToPair(tuple->tuple), edges);
 		assertTrue(vertices.count() == 5L);
 	}
 }
