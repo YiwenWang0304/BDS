@@ -58,27 +58,34 @@ public class EdgeTripletPartition<ED, VD> extends EdgePartition<ED> implements S
 		VertexPredicate srcpredicate=srcVertex.predicate;
 		VertexPredicate dstpredicate=dstVertex.predicate;
 		
-		if(srcpredicate.type.equals(VertexPredicate.Type.ATTR)){//if src predicate attr
-			if(vertexAttrs[super.global2local.get(srcid)]==srcpredicate.value) {
-				if(dstpredicate.type.equals(VertexPredicate.Type.ATTR)){//if dst predicate attr
-					if(vertexAttrs[super.global2local.get(dstid)]==dstpredicate.value) 
-						matches.add(new Tuple2<VertexId, VertexId>(srcid,dstid));			
-				}else if(dstpredicate.type.equals(VertexPredicate.Type.ID)){//if dst predicate it
-					for(VertexId id:super.local2global) {
-						if(id==dstid) 
-							matches.add(new Tuple2<VertexId, VertexId>(srcid,dstid));			
+		if(srcpredicate.type.equals(VertexPredicate.Type.ATTR)){//if require src match attr
+			for(int i=0;i<this.vertexAttrs.length;i++) {
+				if(this.vertexAttrs[i]==srcpredicate.value){//find a vertex's attr matches src's attr
+					if(dstpredicate.type.equals(VertexPredicate.Type.ATTR)){//if require dst match attr
+						for(int j=0;j<this.vertexAttrs.length;j++) {
+							if(dstpredicate.type.equals(VertexPredicate.Type.ATTR)) //find a vertex's attr matches dst's attr
+								matches.add(new Tuple2<VertexId, VertexId>(super.local2global[i],super.local2global[j]));	
+						}			
+					}else if(dstpredicate.type.equals(VertexPredicate.Type.ID)){//if require dst match vid
+						for(VertexId id:super.local2global) {
+							if(id==dstid)//find a vertex's vid matches dst's vid
+								matches.add(new Tuple2<VertexId, VertexId>(super.local2global[i],id));			
+						}
 					}
 				}
 			}
-		}else if(srcpredicate.type.equals(VertexPredicate.Type.ID)){//if src predicate id
+		}else if(srcpredicate.type.equals(VertexPredicate.Type.ID)){//if require src match vid
 			for(VertexId id:super.local2global) {
-				if(id==srcid) {
-					if(dstpredicate.type.equals(VertexPredicate.Type.ATTR)){//if dst predicate attr
-						if(vertexAttrs[super.global2local.get(dstid)]==dstpredicate.value) 
-							matches.add(new Tuple2<VertexId, VertexId>(srcid,dstid));			
-					}else if(dstpredicate.type.equals(VertexPredicate.Type.ID)){//if dst predicate id
+				if(id==srcid) {//find a vertex's vid matches src's vid
+					if(dstpredicate.type.equals(VertexPredicate.Type.ATTR)){//if require dst match attr
+						for(int j=0;j<this.vertexAttrs.length;j++) {
+							if(dstpredicate.type.equals(VertexPredicate.Type.ATTR)) //find a vertex's attr matches dst's attr
+								matches.add(new Tuple2<VertexId, VertexId>(id,super.local2global[j]));	
+						}		
+					}else if(dstpredicate.type.equals(VertexPredicate.Type.ID)){//if require dst match vid
 						for(VertexId id2:super.local2global) {
-							if(id2==dstid) matches.add(new Tuple2<VertexId, VertexId>(srcid,dstid));	
+							if(id2==dstid) //find a vertex's vid matches dst's vid
+								matches.add(new Tuple2<VertexId, VertexId>(id,id2));	
 						}
 					}
 				}

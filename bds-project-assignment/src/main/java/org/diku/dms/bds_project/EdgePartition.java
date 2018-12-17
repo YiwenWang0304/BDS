@@ -117,18 +117,17 @@ public class EdgePartition<ED> implements Serializable {
 	private Iterator<Tuple2<VertexId, Long>> calDegrees(int[] localdstids,int[] localsrcids) {
 		List<VertexId> ids = new ArrayList<VertexId>();
 		List<Integer> idlist=new ArrayList<Integer>();
-		int i=0;
 			
-		if(localdstids.length!=0) {
-			idlist= Arrays.stream(localdstids).boxed().collect(Collectors.toList());	
-			Iterator<Integer> it=idlist.iterator();
-			while(it.hasNext())
-				ids.add(i, local2global[idlist.get(i++)]);
-		}else if(localsrcids.length!=0) {
+		if(localdstids!=null) {
+			idlist= Arrays.stream(localdstids).boxed().collect(Collectors.toList());
+			System.out.print(localdstids.length+",");
+			System.out.println(idlist.size());
+			for(int i=0;i<idlist.size();i++) 
+				ids.add(local2global[idlist.get(i)]);
+		}else if(localsrcids!=null) {
 			idlist= Arrays.stream(localsrcids).boxed().collect(Collectors.toList());
-			Iterator<Integer> it=idlist.iterator();
-			while(it.hasNext())
-				ids.add(i, local2global[idlist.get(i++)]);
+			for(int i=0;i<idlist.size();i++) 
+				ids.add(local2global[idlist.get(i)]);
 		}
 
 		JavaRDD<VertexId> distData = SharedJavaSparkContextLocal.jsc().parallelize(ids);

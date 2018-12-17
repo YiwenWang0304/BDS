@@ -131,7 +131,7 @@ public class EdgeRDD<ED> extends RDD<Edge<ED>> {
 	 */
 	public JavaRDD<Tuple2<VertexId, Long>> inDegrees() {
 		//implemented
-		return calDegrees(0);
+		return calDegrees(EdgeDirection.IN);
 	}
 
 	/**
@@ -141,7 +141,7 @@ public class EdgeRDD<ED> extends RDD<Edge<ED>> {
 	 */
 	public JavaRDD<Tuple2<VertexId, Long>> outDegrees() {
 		//implemented
-		return calDegrees(1);
+		return calDegrees(EdgeDirection.OUT);
 	}
 
 	/**
@@ -151,20 +151,20 @@ public class EdgeRDD<ED> extends RDD<Edge<ED>> {
 	 */
 	public JavaRDD<Tuple2<VertexId, Long>> degrees() {
 		//implemented
-		return calDegrees(2);
+		return calDegrees(EdgeDirection.BOTH);
 	}
 	
 	//implemented
-	private JavaRDD<Tuple2<VertexId, Long>> calDegrees(int i) {
+	private JavaRDD<Tuple2<VertexId, Long>> calDegrees(EdgeDirection edgeDirection) {
 		List<Tuple2<PartitionId, EdgePartition<ED>>> edgepartitions = partitionsRDD.collect();
 		List<Tuple2<VertexId, Long>> degrees_result = new ArrayList<Tuple2<VertexId, Long>>();
 
 		Iterator<Tuple2<PartitionId, EdgePartition<ED>>> it_eps = edgepartitions.iterator();
 		while (it_eps.hasNext()) {
 			Iterator<Tuple2<VertexId, Long>> it_ep = null;
-			if (i == 0) it_ep = it_eps.next()._2.inDegrees();
-			else if (i == 1) it_ep = it_eps.next()._2.outDegrees();
-			else if (i == 2) it_ep = it_eps.next()._2.degrees();		
+			if (edgeDirection.equals(EdgeDirection.IN)) it_ep = it_eps.next()._2.inDegrees();
+			else if (edgeDirection.equals(EdgeDirection.OUT)) it_ep = it_eps.next()._2.outDegrees();
+			else if (edgeDirection.equals(EdgeDirection.BOTH)) it_ep = it_eps.next()._2.degrees();		
 			while (it_ep.hasNext()) degrees_result.add(it_ep.next());
 		}
 		

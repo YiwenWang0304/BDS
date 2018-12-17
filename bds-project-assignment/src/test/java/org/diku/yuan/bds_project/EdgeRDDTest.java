@@ -66,43 +66,45 @@ public class EdgeRDDTest extends SharedJavaSparkContextLocal implements Serializ
 		List<Edge<Integer>> testEdges = sampleEdges();
 		JavaRDD<Edge<Integer>> edges = jsc().parallelize(testEdges);
 		EdgeRDD<Integer> edgeRDD = EdgeRDD.fromEdges(edges);
-		/*List<Tuple2<VertexId, Long>> in=edgeRDD.inDegrees().collect();
-		List<Tuple2<VertexId, Long>> out=edgeRDD.inDegrees().collect();
-		List<Tuple2<VertexId, Long>> both=edgeRDD.inDegrees().collect();
+		List<Tuple2<VertexId, Long>> in=edgeRDD.inDegrees().collect();
+		List<Tuple2<VertexId, Long>> out=edgeRDD.outDegrees().collect();
+		List<Tuple2<VertexId, Long>> both=edgeRDD.degrees().collect();
 		Iterator<Tuple2<VertexId, Long>> inItr=in.iterator();
 		Iterator<Tuple2<VertexId, Long>> outItr=out.iterator();
-		Iterator<Tuple2<VertexId, Long>> bothItr=both.iterator();*/
-		/*while(inItr.hasNext()) {
-			if(inItr.next()._1.equals(1)) 
+		Iterator<Tuple2<VertexId, Long>> bothItr=both.iterator();
+		while(inItr.hasNext()) {//test indegree
+			VertexId vid=inItr.next()._1;
+			if(vid.equals(1)) 
 				assert(inItr.next()._2==3);
-			else if(inItr.next()._1.equals(2)) 
+			else if(vid.equals(2)) 
 				assert(inItr.next()._2==1);
-			else if(inItr.next()._1.equals(3)) 
+			else if(vid.equals(3)) 
 				assert(inItr.next()._2==1);
-			System.out.println(inItr.next()._1+","+inItr.next()._2);
-		}*/
-		/*while(outItr.hasNext()) {
-			if(outItr.next()._1.equals(2)) 
+		}
+		while(outItr.hasNext()) {//test outdegree
+			VertexId vid=outItr.next()._1;
+			if(vid.equals(2)) 
 				assert(outItr.next()._2==1);
-			else if(outItr.next()._1.equals(3)) 
+			else if(vid.equals(3)) 
 				assert(outItr.next()._2==1);
-			else if(outItr.next()._1.equals(4)) 
+			else if(vid.equals(4)) 
 				assert(outItr.next()._2==2);
-			else if(outItr.next()._1.equals(5)) 
+			else if(vid.equals(5)) 
 				assert(outItr.next()._2==1);
 		}
-		while(bothItr.hasNext()) {
-			if(bothItr.next()._1.equals(1)) 
+		while(bothItr.hasNext()) {//test degree
+			VertexId vid=bothItr.next()._1;
+			if(vid.equals(1)) 
 				assert(bothItr.next()._2==3);
-			else if(bothItr.next()._1.equals(2)) 
+			else if(vid.equals(2)) 
 				assert(bothItr.next()._2==2);
-			else if(bothItr.next()._1.equals(3)) 
+			else if(vid.equals(3)) 
 				assert(bothItr.next()._2==2);
-			else if(bothItr.next()._1.equals(4)) 
+			else if(vid.equals(4)) 
 				assert(bothItr.next()._2==2);
-			else if(bothItr.next()._1.equals(5)) 
+			else if(vid.equals(5)) 
 				assert(bothItr.next()._2==1);
-		}*/
+		}
 		
 	}
 	

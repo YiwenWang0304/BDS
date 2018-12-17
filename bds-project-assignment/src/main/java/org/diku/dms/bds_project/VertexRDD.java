@@ -179,7 +179,7 @@ public class VertexRDD<VD> extends RDD<Tuple2<VertexId, VD>> {
 	 * @return a new `VertexRDD`
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static <VD> VertexRDD<VD> fromVertexPartitions(JavaRDD<VertexPartition<VD>> vertexPartitions) {
+	public static <VD> VertexRDD<VD> fromVertexPartitions(JavaRDD<VertexPartition<VD>> vertexPartitions) {
 		return new VertexRDD(vertexPartitions);
 	}
 

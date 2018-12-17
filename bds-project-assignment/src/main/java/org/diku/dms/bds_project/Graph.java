@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.diku.dms.bds_project.query.EdgePattern;
+import org.diku.dms.bds_project.query.MatchMeta;
 import org.diku.dms.bds_project.query.MatchesRDD;
 import org.diku.dms.bds_project.query.PatternGraph;
 
@@ -131,7 +132,15 @@ public class Graph<VD, ED> implements Serializable {
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public MatchesRDD matchEdgePattern(EdgePattern edgePattern) {
-		return new MatchesRDD(edgeTriplets.matchEdgePattern(edgePattern));
+		//implemented
+		
+		//generate meta data from inputed edgePattern
+		List<VertexId> vertexs=new ArrayList<VertexId>(null);
+		vertexs.add(edgePattern.srcVertex.id);
+		vertexs.add(edgePattern.dstVertex.id);
+		MatchMeta meta=new MatchMeta(vertexs);
+		
+		return new MatchesRDD(meta, edgeTriplets.matchEdgePattern(edgePattern));
 	}
 	
 	/**
@@ -139,11 +148,13 @@ public class Graph<VD, ED> implements Serializable {
 	 * 
 	 * @param patternGraph
 	 * @return a new `MatchesRDD`
+	 * @throws Exception 
+	 * @throws NumberFormatException 
 	 */
 	@SuppressWarnings("rawtypes")
-	public MatchesRDD match(PatternGraph patternGraph) {
+	public List<MatchesRDD> match(PatternGraph patternGraph) throws NumberFormatException, Exception {
 		//implemented
 		EdgePattern[] edgepatterns=patternGraph.toEdgePatterns();	
-		return MatchesRDD.fromEdgePattern(edgepatterns);
+		return MatchesRDD.matchEdgePattern(edgepatterns);
 	}
 }

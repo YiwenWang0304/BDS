@@ -50,12 +50,11 @@ public class EdgeTripletRDD<ED, VD> extends RDD<EdgeTriplet<ED, VD>> {
 		List<Tuple2<PartitionId, EdgeTripletPartition<ED,VD>>> edgetripletpartitions=partitionsRDD.collect();
 		Iterator<Tuple2<PartitionId, EdgeTripletPartition<ED,VD>>> edgetripletpartitionsItr=edgetripletpartitions.iterator();
 		
-		Iterator<Tuple2<VertexId, VertexId>> matchedRDDItr = null;
 		List<Match> matches=new ArrayList<Match>(null);
 		
 		while(edgetripletpartitionsItr.hasNext()) {
 			EdgeTripletPartition<ED,VD> edgetripletpartition=edgetripletpartitionsItr.next()._2;
-			matchedRDDItr= edgetripletpartition.matchEdgePattern(edgePattern);
+			Iterator<Tuple2<VertexId, VertexId>>matchedRDDItr= edgetripletpartition.matchEdgePattern(edgePattern);
 			while(matchedRDDItr.hasNext()) {
 				Match match = null;
 				match.vertexs.add(matchedRDDItr.next()._1);

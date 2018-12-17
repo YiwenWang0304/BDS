@@ -28,12 +28,12 @@ public class MatchesRDD<VD, ED> extends JavaRDD<Match> {
 	 * 
 	 * @param matches a JavaRDD consists of many `Match` instances.
 	 */
-	public MatchesRDD(JavaRDD<Match> matches) {
-		// You may need to change the constructor function.
+	public MatchesRDD(MatchMeta meta,JavaRDD<Match> matches) {
+		// implemented
 		super(matches.rdd(), scala.reflect.ClassTag$.MODULE$.apply(Match.class));
 		List<Match> listMatches = matches.collect();
 		Iterator<Match> it = listMatches.iterator();
-		this.meta = new MatchMeta(listMatches.get(0).vertexs);
+		this.meta = meta;
 		while (it.hasNext())
 			this.matches.add(it.next());
 	}
@@ -56,7 +56,7 @@ public class MatchesRDD<VD, ED> extends JavaRDD<Match> {
 	@SuppressWarnings("null")
 	public MatchesRDD<ED, VD> join(MatchesRDD<ED, VD> other) {
 		// Implemented.
-		MatchesRDD<ED, VD> newmatchRDD = new MatchesRDD<ED, VD>(null);
+		MatchesRDD<ED, VD> newmatchRDD = new MatchesRDD<ED, VD>(null,null);
 		Iterator<VertexId> itmeta = other.meta.iterator();
 		int othervertexpos = 0;
 		while (itmeta.hasNext()) {
@@ -109,43 +109,41 @@ public class MatchesRDD<VD, ED> extends JavaRDD<Match> {
 		return newmatchRDD;
 	}
 
-	// implemeting
-	/*
-	 * the IntermediateResultRDD instances of edge pattern (i.e. a subgraph pattern
-	 * with only a single edge) should be obtained from getAllEdgesByLabels and
-	 * getEdgesFromVertexByLabels. In the report, please describe your
-	 * implementation of IntermediateResultRDD.
-	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static MatchesRDD fromEdgePattern(EdgePattern[] edgePatterns) {
-		List<Tuple2<VertexId, VertexId>> matches=new ArrayList<Tuple2<VertexId, VertexId>>(null);
-		List<Match> ms=new ArrayList<Match>(null);
+	// implemented-get both graph and edgepatterns from file.
+	@SuppressWarnings({ "rawtypes"})
+	public static List<MatchesRDD> matchEdgePattern() throws NumberFormatException, Exception {
+		List<MatchesRDD> matchesrdd=new ArrayList<MatchesRDD>(null);
 		
-		EdgeDirection edgeDirection=EdgeDirection.IN;
-		
-		VD vertexLabel=
+		GraphLoader graphLoader=new GraphLoader();//create a graphloader instance
+		Graph graph=graphLoader.getGraphInstance("/home/ywang/");//get a graph instance
+		PatternGraph patterngraph=graphLoader.getPatternInstance("file_dir");//get pattern instance
+		EdgePattern[] edgePatterns=patterngraph.toEdgePatterns();
 		
 		for(EdgePattern edgePattern:edgePatterns) {
-			if(edgePattern.srcVertex.predicate.type.equals(VertexPredicate.Type.ATTR)) 
-				matches=getEdgesFromVertexByLabels(
-						edgePattern.srcVertex.predicate.value,edgePattern.attr,edgeDirection).collect();
-			else if(edgePattern.srcVertex.predicate.type.equals(VertexPredicate.Type.ID))
-				matches=getAllEdgesByLabels(
-						edgePattern.srcVertex.predicate.value,edgePattern.attr,edgeDirection).collect();
+			//generate matchRDD for this edgePattern
+			MatchesRDD mrdd=graph.matchEdgePattern(edgePattern);
+			
+			matchesrdd.add(mrdd);
 		}
-		
-		Iterator<Tuple2<VertexId, VertexId>> matchesItr=matches.iterator();
-		while(matchesItr.hasNext()) {
-			Tuple2<VertexId, VertexId> t=matchesItr.next();
-			List<VertexId> v=new ArrayList<VertexId>(null);
-			v.add(t._1);
-			v.add(t._2);
-			ms.add(new Match(v));
-		}
-		
-		MatchesRDD mrdd=new MatchesRDD(SharedJavaSparkContextLocal.jsc().parallelize(ms));
-		return mrdd;
+		return matchesrdd;
 	}
+	
+	// implementing- only get graph from file.
+	@SuppressWarnings({ "rawtypes",})
+	public static List<MatchesRDD> matchEdgePattern(EdgePattern[] edgePatterns) throws NumberFormatException, Exception {
+			List<MatchesRDD> matchesrdd=new ArrayList<MatchesRDD>(null);
+			
+			GraphLoader graphLoader=new GraphLoader();//create a graphloader instance
+			Graph graph=graphLoader.getGraphInstance("/home/ywang/");//get a graph instance
+			
+			for(EdgePattern edgePattern:edgePatterns) {
+				//generate matchRDD for this edgePattern
+				MatchesRDD mrdd=graph.matchEdgePattern(edgePattern);
+				
+				matchesrdd.add(mrdd);
+			}
+			return matchesrdd;
+		}
 
 	/*// implemented
 	public JavaRDD<Tuple2<VertexId, VertexId>> getAllEdgesByLabels(VD vertexLabel, ED edgeLabel, EdgeDirection edgeDirection) {
