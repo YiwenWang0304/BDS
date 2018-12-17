@@ -17,12 +17,14 @@ public class MatchMeta {
 		this.vertexs = vertexs;
 	}
 	
-	public int compareWith(VertexId othervid) {
-		for(int index=0;index<vertexs.size();index++) {
-		 if (vertexs.get(index).compareTo(othervid)==0) 
-			return index;
+	public int[] compareWith(MatchMeta othermeta) {
+		for(int i=0;i<this.vertexs.size();i++) {
+			for(int j=0;j<othermeta.vertexs.size();i++) {
+				if (this.vertexs.get(i).compareTo(othermeta.vertexs.get(j))==0) 
+					return new int[] {i,j};
+			}
 		} 
-		return -1;
+		return new int[]{-1,-1};
 	}
 	
 	public Iterator<VertexId> iterator(){

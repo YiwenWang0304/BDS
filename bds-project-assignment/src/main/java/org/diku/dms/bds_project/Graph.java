@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.PairFunction;
 import org.diku.dms.bds_project.query.EdgePattern;
 import org.diku.dms.bds_project.query.MatchMeta;
 import org.diku.dms.bds_project.query.MatchesRDD;
@@ -148,20 +149,32 @@ public class Graph<VD, ED> implements Serializable {
 	 * 
 	 * @param patternGraph
 	 * @return a new `MatchesRDD`
-	 * @throws Exception 
-	 * @throws NumberFormatException 
 	 */
 	@SuppressWarnings("rawtypes")
-	public MatchesRDD match(PatternGraph patternGraph) throws NumberFormatException, Exception {
+	public MatchesRDD match(PatternGraph patternGraph) {
 		//implemented
 		EdgePattern[] edgePatterns=patternGraph.toEdgePatterns();	
 		
 		List<MatchesRDD> matchRDDList=new ArrayList<MatchesRDD>(null);
-		for(EdgePattern edgePattern:edgePatterns) 
+		for(EdgePattern edgePattern:edgePatterns) {
 			matchRDDList.add(matchEdgePattern(edgePattern));
+		}
+			
+		//subgraph matching optimization
+		JavaRDD<MatchesRDD> mRDD=SharedJavaSparkContextLocal.jsc().parallelize(matchRDDList);
+		JavaPairRDD<MatchesRDD, Long> pairs = mRDD.mapToPair(s -> new Tuple2<MatchesRDD,Long>(s, 1L));
+		JavaPairRDD<MatchesRDD, Long> counts = pairs.reduceByKey((a, b) -> a + b);	
+		JavaPairRDD<Long, MatchMeta> swapped = counts.mapToPair(new PairFunction<Tuple2<MatchMeta, Long>, Long, MatchMeta>() {
+	           @Override
+	           public Tuple2<Long, MatchMeta> call(Tuple2<MatchMeta, Long> item) throws Exception {
+	               return item.swap();
+	           }
+	      });
+		swapped.sortByKey();
+		List<Tuple2<Long, MatchMeta>> matchMetaCounts=swapped.collect();
 		
 		
 		
-		
+		return null;	
 	}
 }
