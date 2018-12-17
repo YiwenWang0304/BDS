@@ -109,41 +109,15 @@ public class MatchesRDD<VD, ED> extends JavaRDD<Match> {
 		return newmatchRDD;
 	}
 
-	// implemented-get both graph and edgepatterns from file.
+	// implemented
 	@SuppressWarnings({ "rawtypes"})
-	public static List<MatchesRDD> matchEdgePattern() throws NumberFormatException, Exception {
-		List<MatchesRDD> matchesrdd=new ArrayList<MatchesRDD>(null);
-		
+	public static MatchesRDD matchEdgePattern() throws NumberFormatException, Exception {
 		GraphLoader graphLoader=new GraphLoader();//create a graphloader instance
 		Graph graph=graphLoader.getGraphInstance("/home/ywang/");//get a graph instance
 		PatternGraph patterngraph=graphLoader.getPatternInstance("file_dir");//get pattern instance
-		EdgePattern[] edgePatterns=patterngraph.toEdgePatterns();
-		
-		for(EdgePattern edgePattern:edgePatterns) {
-			//generate matchRDD for this edgePattern
-			MatchesRDD mrdd=graph.matchEdgePattern(edgePattern);
 			
-			matchesrdd.add(mrdd);
-		}
-		return matchesrdd;
+		return graph.match(patterngraph);
 	}
-	
-	// implementing- only get graph from file.
-	@SuppressWarnings({ "rawtypes",})
-	public static List<MatchesRDD> matchEdgePattern(EdgePattern[] edgePatterns) throws NumberFormatException, Exception {
-			List<MatchesRDD> matchesrdd=new ArrayList<MatchesRDD>(null);
-			
-			GraphLoader graphLoader=new GraphLoader();//create a graphloader instance
-			Graph graph=graphLoader.getGraphInstance("/home/ywang/");//get a graph instance
-			
-			for(EdgePattern edgePattern:edgePatterns) {
-				//generate matchRDD for this edgePattern
-				MatchesRDD mrdd=graph.matchEdgePattern(edgePattern);
-				
-				matchesrdd.add(mrdd);
-			}
-			return matchesrdd;
-		}
 
 	/*// implemented
 	public JavaRDD<Tuple2<VertexId, VertexId>> getAllEdgesByLabels(VD vertexLabel, ED edgeLabel, EdgeDirection edgeDirection) {

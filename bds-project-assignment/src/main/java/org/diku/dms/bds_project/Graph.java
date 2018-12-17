@@ -152,9 +152,16 @@ public class Graph<VD, ED> implements Serializable {
 	 * @throws NumberFormatException 
 	 */
 	@SuppressWarnings("rawtypes")
-	public List<MatchesRDD> match(PatternGraph patternGraph) throws NumberFormatException, Exception {
+	public MatchesRDD match(PatternGraph patternGraph) throws NumberFormatException, Exception {
 		//implemented
-		EdgePattern[] edgepatterns=patternGraph.toEdgePatterns();	
-		return MatchesRDD.matchEdgePattern(edgepatterns);
+		EdgePattern[] edgePatterns=patternGraph.toEdgePatterns();	
+		
+		List<MatchesRDD> matchRDDList=new ArrayList<MatchesRDD>(null);
+		for(EdgePattern edgePattern:edgePatterns) 
+			matchRDDList.add(matchEdgePattern(edgePattern));
+		
+		
+		
+		
 	}
 }

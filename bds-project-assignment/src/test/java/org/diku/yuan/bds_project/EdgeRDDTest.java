@@ -60,7 +60,7 @@ public class EdgeRDDTest extends SharedJavaSparkContextLocal implements Serializ
 		assert(collectedEdges.get(4).compareTo(testEdges.get(3)) == 0);
 	}
 	
-	//implementing
+	//implemented
 	@Test
 	public void testDegree() {
 		List<Edge<Integer>> testEdges = sampleEdges();
@@ -104,8 +104,7 @@ public class EdgeRDDTest extends SharedJavaSparkContextLocal implements Serializ
 				assert(bothItr.next()._2==2);
 			else if(vid.equals(5)) 
 				assert(bothItr.next()._2==1);
-		}
-		
+		}	
 	}
 	
 	
