@@ -7,7 +7,9 @@ import java.util.Map;
 import org.apache.spark.SparkConf;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 import scala.Tuple2;
@@ -72,11 +74,27 @@ public class WindowingWordCount {
 	 * @param windowDuration the size of window
 	 * @param slideDuration the slide length of window
 	 * @param eventDelay the event delay respect to processing time (e.g., when set as 1s, the messages whose event time smaller than 19s should arrive as latest as 20s)
+	 * @throws TwitterException 
 	 */
-	public static void topK2GramEventBased(JavaStreamingContext jssc, Duration windowDuration, Duration slideDuration, Duration eventDelay) {
-		//implement here
-		// new EventDStream to convert data stream from processing time to event time
+	public static void topK2GramEventBased(JavaStreamingContext jssc, Duration windowDuration, Duration slideDuration, Duration eventDelay) throws TwitterException {
+		//implementing
+		// new EventDStream to convert data stream from processing time to event time???
 		
+		Map<String, Integer> topicMap = new HashMap<>();
+		topicMap.put("test", 1);
+		JavaDStream<Tuple2<Long, String>> eventTextStream = jssc.receiverStream(new OrderedEventTextStreamKafkaReceiver(eventDelay));
+		//EventDStream<String> eventDStream = new EventDStream<String>(eventTextStream.dstream(), eventDelay);
+		
+		eventTextStream.map(tuple->tuple._2).window(windowDuration, slideDuration)
+		.flatMap(s->Arrays.asList(s.split(" ")).iterator()).mapToPair(s->new Tuple2<String, Long>(s, 1L)).reduceByKey((a, b)->a+b).print();
+		String filename = "tweetstream.txt";
+		EventTextStreamKafkaProducer.startProduceForTwitterData(filename, 100, 1000); // start the producer thread
+		 jssc.start();
+		 try {
+			jssc.awaitTermination();
+		} catch (InterruptedException e) {
+			;
+		}
 	}
 	
 	/**
