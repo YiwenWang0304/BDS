@@ -43,7 +43,6 @@ public class EventDStream<T> extends DStream<T> {
 		super(dstream.ssc(), scala.reflect.ClassTag$.MODULE$.apply(Object.class));
 		this.slideDuration = dstream.slideDuration();
 		this.eventDelay = eventDelay;
-		
 		//implemented
 		this.parent = dstream ;
 	}
@@ -60,7 +59,6 @@ public class EventDStream<T> extends DStream<T> {
 		Time beginTime = eventWindow.beginTime();
 		Time endTime = eventWindow.endTime();
 		JavaRDD<Tuple2<Time, T>> parentRDD = parent.getOrCompute(validTime).get().toJavaRDD();
-		
 		//implemented
 		java.util.List<Tuple2<Time, T>> parentList = parentRDD.collect();
 		java.util.List<T> childList = new ArrayList<T>();

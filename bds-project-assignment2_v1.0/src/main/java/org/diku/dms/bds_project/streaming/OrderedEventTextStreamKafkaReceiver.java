@@ -1,6 +1,9 @@
 package org.diku.dms.bds_project.streaming;
 
+import java.nio.Buffer;
+import java.nio.CharBuffer;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.Consumer;
@@ -17,6 +20,7 @@ import org.apache.spark.streaming.receiver.Receiver;
 
 import scala.Tuple2;
 
+@SuppressWarnings("serial")
 public class OrderedEventTextStreamKafkaReceiver extends Receiver<Tuple2<Long, String>> {
 	
 	private static String TOPIC = "test";
@@ -55,7 +59,36 @@ public class OrderedEventTextStreamKafkaReceiver extends Receiver<Tuple2<Long, S
 	}
 	
 	private void receive() {
-      	//implement your out-of-order handling method here
+      	//implementing
+      	consumer = createConsumer();
+      	int noMessageFound = 0;
+  	 	while (!isStopped()) {
+  	 		@SuppressWarnings("deprecation")
+			ConsumerRecords<Long, String> records = consumer.poll(1000); // fetch messages using consumer api and await at most 1 second
+  	 		if (records.count() == 0) {
+  	 			noMessageFound ++;
+  	 			if (noMessageFound > 5) break; // if nothing fetched 5 times in a row, stop reading
+  	 			else continue;
+  	 		}
+  	 		noMessageFound = 0;
+  	 		//to buffer all the data and
+  	 		//only send out the data in order based on the value of maxEventDelay
+  	 		Long maxDelay = maxEventDelay.milliseconds();
+  	 		int capacity = 0; //need to be changed
+			StringBuffer buffer = new StringBuffer();
+			Iterator<ConsumerRecord<Long, String>> recIter = records.iterator();
+			for(int tmp = 0; tmp<records.count();tmp++) {
+				String c = recIter.next().value();
+				buffer.insert(tmp,c);
+			}
+  	 		
+  	 		/*records.forEach(record->{
+  	 			store(new Tuple2<Long, String>(record.key(), record.value())); // for each record, call store() function provided by SparkStreaming api 
+  	 		});*/
+			
+  	 		consumer.commitAsync();
+  	  	  }
+  	 	consumer.close();
 	}
 }
 

@@ -143,7 +143,7 @@ public class EventTextStreamKafkaProducer {
 		return t;
     }
     
-    //implementing
+    //implemented
     private static void runOutOfOrderFileProducer(final BufferedReader reader, final int sendMessageCount,Duration maxDelay) throws InterruptedException, ExecutionException, IOException, TwitterException {
     	final Producer<Long, String> producer = createProducer();      
         try {
