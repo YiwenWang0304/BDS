@@ -2,10 +2,12 @@ package org.diku.dms.bds_project.streaming;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -59,7 +61,7 @@ public class OrderedEventTextStreamKafkaReceiver extends Receiver<Tuple2<Long, S
 	}
 	
 	private void receive() {
-      	//implementing
+      	//implemented
       	consumer = createConsumer();
       	int noMessageFound = 0;
   	 	while (!isStopped()) {
@@ -75,12 +77,12 @@ public class OrderedEventTextStreamKafkaReceiver extends Receiver<Tuple2<Long, S
   	 		//only send out the data in order based on the value of maxEventDelay
   	 		long d = maxEventDelay.milliseconds();
 			Iterator<ConsumerRecord<Long, String>> recIter = records.iterator();
-			int capacity = 5;
+			int capacity = records.count();
 			List<ConsumerRecord<Long, String>> buffer = new ArrayList<ConsumerRecord<Long, String>>();
-			List<ConsumerRecord<Long, String>> storeList = new ArrayList<ConsumerRecord<Long, String>>();
-			ConsumerRecord<Long, String> first = recIter.next();
+			
 			/*when maxEventDelay is set as d, it guarantees that, when a data item with an timestamp as x+d has arrived, all the
 			data with timestamps older than or equal to x have already arrived*/
+			ConsumerRecord<Long, String> first = recIter.next();
 			long x = first.timestamp();
 			long geX = x - d;
 			buffer.add(first);
@@ -92,26 +94,22 @@ public class OrderedEventTextStreamKafkaReceiver extends Receiver<Tuple2<Long, S
 				}
 				else if(buffer.size()<= capacity) {
 					buffer.add(rec);
-					
+					//update low bound timestamp
+					if(geX > x1-d) geX = x1-d;
 				}
-				else {//sort the buffer and output record with smallest timestamp, and insert new record into buffer, and update previous geX
-					ConsumerRecord<Long, String> out = null;
-					//store in storeList
-					storeList.add(out);
-					buffer.set(capacity-1, rec);
+				else {//sort the buffer and output records
+					Collections.sort(buffer, (a,b) -> b.key().compareTo(a.key()));
+					}
 				}
-				//update low bound timestamp
-				if(geX> x1-d) geX = x1-d;
-			}
-  	 		
-  	 		/*records.forEach(record->{
-  	 			store(new Tuple2<Long, String>(record.key(), record.value())); // for each record, call store() function provided by SparkStreaming api 
-  	 		});*/
-			
+  	 		buffer.forEach(record->{
+	 			store(new Tuple2<Long, String>(record.key(), record.value())); // for each record, call store() function provided by SparkStreaming api 
+	 		});
   	 		consumer.commitAsync();
-  	  	  }
+			}
   	 	consumer.close();
+  	  	  }
+  	 	
 	}
-}
+
 
 
