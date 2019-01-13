@@ -1,9 +1,9 @@
 package org.diku.dms.bds_project.streaming;
 
-import java.nio.Buffer;
-import java.nio.CharBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.Consumer;
@@ -73,13 +73,35 @@ public class OrderedEventTextStreamKafkaReceiver extends Receiver<Tuple2<Long, S
   	 		noMessageFound = 0;
   	 		//to buffer all the data and
   	 		//only send out the data in order based on the value of maxEventDelay
-  	 		Long maxDelay = maxEventDelay.milliseconds();
-  	 		int capacity = 0; //need to be changed
-			StringBuffer buffer = new StringBuffer();
+  	 		long d = maxEventDelay.milliseconds();
 			Iterator<ConsumerRecord<Long, String>> recIter = records.iterator();
-			for(int tmp = 0; tmp<records.count();tmp++) {
-				String c = recIter.next().value();
-				buffer.insert(tmp,c);
+			int capacity = 5;
+			List<ConsumerRecord<Long, String>> buffer = new ArrayList<ConsumerRecord<Long, String>>();
+			List<ConsumerRecord<Long, String>> storeList = new ArrayList<ConsumerRecord<Long, String>>();
+			ConsumerRecord<Long, String> first = recIter.next();
+			/*when maxEventDelay is set as d, it guarantees that, when a data item with an timestamp as x+d has arrived, all the
+			data with timestamps older than or equal to x have already arrived*/
+			long x = first.timestamp();
+			long geX = x - d;
+			buffer.add(first);
+			while(recIter.hasNext()) {
+				ConsumerRecord<Long, String> rec = recIter.next();
+				long x1 = rec.timestamp();
+				if(x1<geX) {
+					continue;
+				}
+				else if(buffer.size()<= capacity) {
+					buffer.add(rec);
+					
+				}
+				else {//sort the buffer and output record with smallest timestamp, and insert new record into buffer, and update previous geX
+					ConsumerRecord<Long, String> out = null;
+					//store in storeList
+					storeList.add(out);
+					buffer.set(capacity-1, rec);
+				}
+				//update low bound timestamp
+				if(geX> x1-d) geX = x1-d;
 			}
   	 		
   	 		/*records.forEach(record->{
