@@ -51,12 +51,10 @@ public class EdgePartition<ED> implements Serializable {
 		return new scala.collection.AbstractIterator<Edge<ED>>() {
 			private int pos = 0;
 
-			@Override
 			public boolean hasNext() {
 				return pos < EdgePartition.this.size;
 			}
 
-			@Override
 			public Edge<ED> next() {
 				Edge<ED> edge = new Edge<ED>(local2global[localSrcIds[pos]], local2global[localDstIds[pos]], data[pos]);
 				pos++;

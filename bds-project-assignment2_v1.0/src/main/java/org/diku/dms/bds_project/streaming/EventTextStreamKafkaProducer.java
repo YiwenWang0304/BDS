@@ -23,8 +23,6 @@ import twitter4j.Status;
 import twitter4j.TwitterException;
 import twitter4j.TwitterObjectFactory;
 
-
-
 public class EventTextStreamKafkaProducer {
 	private final static String TOPIC = "test";
     private final static String BOOTSTRAP_SERVERS = "localhost:9092";

@@ -13,7 +13,7 @@ import org.apache.spark.streaming.StreamingContext;
 import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.dstream.DStream;
-import org.diku.yuan.bds_project.SharedJavaSparkContextLocal;
+import org.diku.dms.bds_project.SharedJavaSparkContextLocal;
 
 import scala.Function1;
 import scala.Option;
@@ -60,15 +60,8 @@ public class EventDStream<T> extends DStream<T> {
 		Time endTime = eventWindow.endTime();
 		JavaRDD<Tuple2<Time, T>> parentRDD = parent.getOrCompute(validTime).get().toJavaRDD();
 		//implemented
-		java.util.List<Tuple2<Time, T>> parentList = parentRDD.collect();
-		java.util.List<T> childList = new ArrayList<T>();
-		Iterator<Tuple2<Time, T>> it_par = parentList.iterator();
-		while (it_par.hasNext()) {
-			if(beginTime.$less$eq(it_par.next()._1) && endTime.$greater$eq(it_par.next()._1)) {
-				childList.add(it_par.next()._2);
-			}
-		}	
-		RDD<T> eventRDD = SharedJavaSparkContextLocal.jsc.parallelize(childList).rdd();
+		
+		RDD<T> eventRDD = parentRDD.filter(s -> beginTime.$less$eq(s._1)&&endTime.$greater$eq(s._1)).map(s -> s._2).rdd();
 		return Option.apply(eventRDD);
 	}
 	

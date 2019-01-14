@@ -11,7 +11,6 @@ import java.util.Comparator;
 public class Edge<ED> implements Comparable<Edge<ED>>, Serializable {
 	
 	public static Comparator<Edge> comparator = new Comparator<Edge>() {
-		@Override
 		public int compare(Edge o1, Edge o2) {
 			return o1.compareTo(o2);
 		}
@@ -62,7 +61,6 @@ public class Edge<ED> implements Comparable<Edge<ED>>, Serializable {
 	}
 	
 
-	@Override
 	public int compareTo(Edge<ED> other) {
 		if (srcId.compareTo(other.srcId) == 0) {
 			if (dstId.compareTo(other.dstId) == 0)

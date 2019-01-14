@@ -1,16 +1,27 @@
 package org.diku.dms.bds_project.streaming;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.FlatMapFunction2;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.diku.dms.bds_project.RoutingTablePartition;
+import org.diku.dms.bds_project.ShippableVertexPartition;
+import org.diku.dms.bds_project.VertexId;
+import org.diku.dms.bds_project.VertexPartition;
 
 import scala.Tuple2;
 import twitter4j.TwitterException;
@@ -56,8 +67,27 @@ public class WindowingWordCount {
 		Map<String, Integer> topicMap = new HashMap<>();
 		topicMap.put("test", 1);
 		JavaDStream<Tuple2<Long, String>> eventTextStream = jssc.receiverStream(new EventTextStreamKafkaReceiver());
-		eventTextStream.map(tuple->tuple._2).window(windowDuration, slideDuration)
-		.flatMap(s->Arrays.asList(s.split(" ")).iterator()).mapToPair(s->new Tuple2<String, Long>(s, 1L)).reduceByKey((a, b)->a+b).print();
+		//eventTextStream.map(tuple->tuple._2).window(windowDuration, slideDuration).flatMap(s->Arrays.asList(s.split(" ")).iterator());
+		JavaDStream<String> neweventTextStream=eventTextStream.map(tuple->tuple._2).window(windowDuration, slideDuration)
+		.flatMap(new FlatMapFunction<String, String> () {
+			@Override
+			public Iterator<String> call(String s) throws Exception {
+				Iterator<String> itr=Arrays.asList(s.split(" ")).iterator();
+				String string1=null;
+				String string2=null;
+				List<String> newlist=new ArrayList<String>();
+				while(itr.hasNext()) {
+					if(string2==null) string1=itr.next();
+					else string1=string2;
+					string2=itr.next();
+					newlist.add(string1+" "+string2);
+				}
+				return newlist.iterator();
+			}
+		}
+		);	 
+		
+		neweventTextStream.mapToPair(s->new Tuple2<String, Long>(s, 1L)).reduceByKey((a, b)->a+b).mapToPair(Tuple2::swap).transformToPair(s->s.sortByKey(false)).print();
 		String filename = "tweetstream.txt";
 		EventTextStreamKafkaProducer.startProduceForTwitterData(filename, 100, 1000); // start the producer thread
 		 jssc.start();
@@ -105,6 +135,7 @@ public class WindowingWordCount {
 	 * @param slideDuration the slide length of window
 	 */
 	public static void sharingTopK2Gram(JavaStreamingContext jssc, Duration windowDuration, Duration slideDuration) {
-		//implement here
+		//implementing
+		
 	}
 }
